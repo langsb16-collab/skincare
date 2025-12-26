@@ -61,11 +61,8 @@ app.get('/', (c) => {
       } else {
         var script = document.createElement('script');
         script.src = '/static/app.js';
-        script.onload = function() {
-          console.log('Safe Pro app loaded successfully');
-        };
         script.onerror = function() {
-          console.error('Failed to load Safe Pro app');
+          console.error('❌ Failed to load Safe Pro app');
         };
         document.body.appendChild(script);
       }

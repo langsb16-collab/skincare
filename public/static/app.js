@@ -153,11 +153,20 @@ const langs = { ko: '한국어', en: 'English', zh: '中文', ja: '日本語', d
 const LANG_KEY = 'safepro_lang';
 
 function getLang() {
-  return localStorage.getItem(LANG_KEY) || 'en';
+  try {
+    return localStorage.getItem(LANG_KEY) || 'en';
+  } catch (err) {
+    console.error('localStorage read error:', err);
+    return 'en';
+  }
 }
 
-function setLang(l) {
-  localStorage.setItem(LANG_KEY, l);
+function setStoredLang(l) {
+  try {
+    localStorage.setItem(LANG_KEY, l);
+  } catch (err) {
+    console.error('localStorage write error:', err);
+  }
 }
 
 const { useState, useEffect, createElement: h } = React;
@@ -303,22 +312,56 @@ function Wound({ t }) {
   const [analyzing, setAnalyzing] = useState(false);
   const [result, setResult] = useState(null);
 
+  // Cleanup on unmount
+  useEffect(() => {
+    return () => {
+      if (url) {
+        URL.revokeObjectURL(url);
+      }
+    };
+  }, [url]);
+
   const handleFile = (e) => {
-    const f = e.target.files?.[0];
-    if (f) {
-      setFile(f);
-      setUrl(URL.createObjectURL(f));
-      setResult(null);
+    try {
+      const f = e.target.files?.[0];
+      if (f) {
+        if (!f.type.startsWith('image/')) {
+          alert('Please select an image file');
+          return;
+        }
+        if (f.size > 10 * 1024 * 1024) {
+          alert('File size must be less than 10MB');
+          return;
+        }
+        setFile(f);
+        const objectUrl = URL.createObjectURL(f);
+        setUrl(objectUrl);
+        setResult(null);
+      }
+    } catch (err) {
+      console.error('File upload error:', err);
+      alert('Failed to upload file: ' + err.message);
     }
   };
 
   const analyze = () => {
-    if (!file) return;
-    setAnalyzing(true);
-    setTimeout(() => {
-      setResult(['green', 'yellow', 'red'][Math.floor(Math.random() * 3)]);
+    if (!file) {
+      alert('Please upload an image first');
+      return;
+    }
+    try {
+      setAnalyzing(true);
+      setTimeout(() => {
+        const results = ['green', 'yellow', 'red'];
+        const randomResult = results[Math.floor(Math.random() * results.length)];
+        setResult(randomResult);
+        setAnalyzing(false);
+      }, 2000);
+    } catch (err) {
+      console.error('Analysis error:', err);
       setAnalyzing(false);
-    }, 2000);
+      alert('Analysis failed: ' + err.message);
+    }
   };
 
   return h('div', { style: { maxWidth: '700px', margin: '0 auto', padding: '16px 12px' } },
@@ -431,12 +474,24 @@ function App() {
   const [lang, setLang] = useState('en');
 
   useEffect(() => {
-    setLang(getLang());
+    try {
+      const storedLang = getLang();
+      if (storedLang && translations[storedLang]) {
+        setLang(storedLang);
+      }
+    } catch (err) {
+      console.error('Language initialization error:', err);
+      setLang('en');
+    }
   }, []);
 
   const handleLang = (l) => {
-    setLang(l);
-    setLang(l);
+    try {
+      setLang(l);
+      setStoredLang(l);
+    } catch (err) {
+      console.error('Language change error:', err);
+    }
   };
 
   const t = translations[lang];
@@ -453,6 +508,20 @@ function App() {
 
 // 마운트
 const root = document.getElementById('root');
-if (root && typeof React !== 'undefined' && typeof ReactDOM !== 'undefined') {
-  ReactDOM.createRoot(root).render(h(App));
+if (root) {
+  try {
+    if (typeof React !== 'undefined' && typeof ReactDOM !== 'undefined') {
+      const reactRoot = ReactDOM.createRoot(root);
+      reactRoot.render(h(App));
+      console.log('✅ Safe Pro app loaded successfully');
+    } else {
+      console.error('❌ React or ReactDOM not loaded');
+      root.innerHTML = '<div style="color:white;text-align:center;padding:50px;"><h2>Loading error</h2><p>React libraries failed to load. Please refresh.</p></div>';
+    }
+  } catch (err) {
+    console.error('❌ App mount error:', err);
+    root.innerHTML = '<div style="color:white;text-align:center;padding:50px;"><h2>Initialization error</h2><p>' + err.message + '</p></div>';
+  }
+} else {
+  console.error('❌ Root element not found');
 }

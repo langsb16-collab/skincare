@@ -14,6 +14,7 @@ app.get('/', (c) => {
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Safe Pro - Smart Healthcare Platform</title>
+  <link rel="icon" href="/static/favicon.ico" type="image/x-icon">
   <script src="https://cdn.tailwindcss.com"></script>
   <link href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css" rel="stylesheet">
   <style>
@@ -51,7 +52,25 @@ app.get('/', (c) => {
   <div id="root"></div>
   <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
   <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
-  <script src="/static/app.jsx"></script>
+  <script>
+    // React 로드 확인 후 앱 스크립트 로드
+    window.addEventListener('DOMContentLoaded', function() {
+      if (typeof React === 'undefined' || typeof ReactDOM === 'undefined') {
+        document.body.innerHTML = '<div style="color:white;text-align:center;padding:50px;"><h1>Loading...</h1><p>React 라이브러리를 로드하는 중입니다.</p></div>';
+        setTimeout(function() { location.reload(); }, 2000);
+      } else {
+        var script = document.createElement('script');
+        script.src = '/static/app.js';
+        script.onload = function() {
+          console.log('Safe Pro app loaded successfully');
+        };
+        script.onerror = function() {
+          console.error('Failed to load Safe Pro app');
+        };
+        document.body.appendChild(script);
+      }
+    });
+  </script>
 </body>
 </html>`);
 });
